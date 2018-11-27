@@ -18,19 +18,33 @@
 #define YELLOW   0xFFE0 
 #define WHITE    0xFFFF
 
+uint16_t arrowSize3[] = {15, 21}; //width, height of a size 3 arrow
+uint16_t bitmapLogoSize[] = {30, 30};
+uint16_t settingsButtonSize[] = {180, 40};
+
 uint16_t home_setLeftArrow[] = {60, 176};
 uint16_t home_setRightArrow[] = {138, 176};
 uint16_t home_modeLeftArrow[] = {49, 240};
-uint16_t home_modeRightArrow[] = {169, 240};
+uint16_t home_modeRightArrow[] = {153, 240};
 uint16_t home_holdButton[] = {0,0};
-uint16_t home_settingsButton[] = {206, 286};
+
+uint16_t settings_setPoints[] = {30, 96};
+uint16_t settings_editTime[] = {30, 160};
+
+uint16_t setPoints_weekdays[] = {30, 96};
+uint16_t setPoints_weekends[] = {30, 160};
+
+uint16_t br_cornerButton[] = {206, 286};
 
 uint16_t backgroundColor = WHITE;
+
+String screenState = "";
 int setTemp = 75;
 int currentTemp = 79;
-String modes[] = {"COOL", "HEAT", "AUTO", "OFF"};
+String dateTime = "Wed Oct 31 10:46 AM";
+String modes[] = {"A/C", "HEAT", "AUTO", "OFF"};
 int currentModeIndex = 0;
-String screenState = "";
+
 
 // home button bitmap 
 const unsigned char homeButton [] PROGMEM = {
@@ -90,6 +104,7 @@ homePage();
 
 
 void loop() {
+  
   // Wait for a touch
   if (! ctp.touched()) {
     return;
@@ -98,31 +113,23 @@ void loop() {
   // Retrieve a point  
   TS_Point p = ctp.getPoint();
 
-  //flip it around to match the screen.
-  //Rotation #3 setting
-  //int oldX = p.x;
-  //int oldY = p.y;
-  //p.x = map(oldY, 0, 320, 0, 320); 
-  //p.y = map(oldX, 0, 240, 240, 0);
 
-
-  
- 
-
-  if(screenState = "HOME"){
+  if(screenState == "HOME"){
 
     //set temp arrows
-    if(isInTouchZone(home_setLeftArrow, p.x, p.y)){
+    if(isInTouchZone(home_setLeftArrow, arrowSize3[0], arrowSize3[1], p.x, p.y)){
       setTemp = setTemp - 1;
       homePage();
+     
     }
 
-    if(isInTouchZone(home_setRightArrow, p.x, p.y)){
+    if(isInTouchZone(home_setRightArrow, arrowSize3[0], arrowSize3[1], p.x, p.y)){
       setTemp = setTemp + 1;
       homePage();
+      
     }
 
-    if(isInTouchZone(home_modeLeftArrow, p.x, p.y)){
+    if(isInTouchZone(home_modeLeftArrow, arrowSize3[0], arrowSize3[1], p.x, p.y)){
 
       if (currentModeIndex > 0){
         currentModeIndex -= 1;
@@ -131,9 +138,10 @@ void loop() {
         currentModeIndex = 3;
       }
       homePage();
+      
     }
 
-    if(isInTouchZone(home_modeLeftArrow, p.x, p.y)){
+    if(isInTouchZone(home_modeRightArrow, arrowSize3[0], arrowSize3[1], p.x, p.y)){
 
       if (currentModeIndex < 3){
         currentModeIndex += 1;
@@ -142,26 +150,81 @@ void loop() {
         currentModeIndex = 0;
       }
       homePage();
+    
     }
 
     
     //settings button
-    if(isInTouchZone(home_settingsButton, p.x, p.y)){
+    if(isInTouchZone(br_cornerButton, bitmapLogoSize[0], bitmapLogoSize[1], p.x, p.y)){
 
       settingsPage();
+      return;
+    } 
+    
+  }
+
+
+  if(screenState == "SETTINGS"){
+
+    
+
+    if(isInTouchZone(settings_setPoints, settingsButtonSize[0], settingsButtonSize[1], p.x, p.y)){
+
+      setPointsChoicePage();
+      return;
+      
     }
 
-    
+    if(isInTouchZone(settings_editTime, settingsButtonSize[0], settingsButtonSize[1], p.x, p.y)){
 
-    
-    
-  }
+      editDateTimePage();
+      return;
+    }
 
+    //home button
+    if(isInTouchZone(br_cornerButton, bitmapLogoSize[0], bitmapLogoSize[1], p.x, p.y)){
 
-  if(screenState = "SETTINGS"){
-
+      homePage();
+      return;
+    }
   
   }
+
+  if(screenState == "SET_POINTS_CHOICE"){
+
+    
+    if(isInTouchZone(setPoints_weekdays, settingsButtonSize[0], settingsButtonSize[1], p.x, p.y)){
+
+      setPointsWeekdaysPage();
+      return;
+    }
+
+    if(isInTouchZone(setPoints_weekends, settingsButtonSize[0], settingsButtonSize[1], p.x, p.y)){
+
+      setPointsWeekendsPage();
+      return;
+    }
+
+    //home button
+    if(isInTouchZone(br_cornerButton, bitmapLogoSize[0], bitmapLogoSize[1], p.x, p.y)){
+
+      homePage();
+      return;
+    }
+  }
+
+  if(screenState == "EDIT_DATETIME"){
+
+    //home button
+    if(isInTouchZone(br_cornerButton, bitmapLogoSize[0], bitmapLogoSize[1], p.x, p.y)){
+
+      homePage();
+      return;
+    }
+  }
+
+
+  delay(250);
 
 }
 
@@ -171,83 +234,109 @@ void homePage(){
 
   screenState = "HOME";
   
-  tft.fillScreen(backgroundColor);
-  tft.setTextColor(BLACK);
-
-  //display date and time
-  tft.setTextSize(2);
-  tft.setCursor(6,8);
-  tft.print("Wed Oct 31 10:46 AM");
+  header();
 
   //display current temp
-  tft.setTextSize(11);
-  tft.setCursor(55, 48);
-  tft.print(currentTemp);
-  tft.setTextSize(5);
-  tft.print((char)247);
+  tft.setTextSize(11); tft.setCursor(55, 48); tft.print(currentTemp);
+  tft.setTextSize(5); tft.print((char)247);
 
   //display set to block
-  tft.setTextSize(2);
-  tft.setCursor(80, 152);
-  tft.print("Set To");
-  tft.setTextSize(3);
-  tft.setCursor(home_setLeftArrow[0], home_setLeftArrow[1]);
-  tft.print("< ");
-  tft.print(setTemp);
-  tft.setTextSize(2);
-  tft.print((char)247);
-  tft.setTextSize(3);
-  tft.setCursor(home_setRightArrow[0], home_setRightArrow[1]);
-  tft.print(" >");
+  tft.setTextSize(2); tft.setCursor(80, 152); tft.print("Set To");
+  tft.setTextSize(3); tft.setCursor(home_setLeftArrow[0], home_setLeftArrow[1]); tft.print("< "); tft.print(setTemp);
+  tft.setTextSize(2); tft.print((char)247);
+  tft.setTextSize(3); tft.setCursor(home_setRightArrow[0], home_setRightArrow[1]); tft.print(" >");
 
   //display mode block
-  tft.setTextSize(2);
-  tft.setCursor(92, 216);
-  tft.print("Mode");
-  tft.setTextSize(3);
-  tft.setCursor(home_modeLeftArrow[0], home_modeLeftArrow[1]);
-  tft.print("< ");
-  tft.print(modes[currentModeIndex]);
-  tft.print(" >");
+  tft.setTextSize(2); tft.setCursor(92, 216); tft.print("Mode");
+  tft.setTextSize(3); tft.setCursor(home_modeLeftArrow[0], home_modeLeftArrow[1]); tft.print("< "); tft.print(modes[currentModeIndex]); 
+  tft.setCursor(home_modeRightArrow[0], home_modeRightArrow[1]); tft.print(" >");
 
   //display hold button
-  tft.drawRect(6, 286, 75, 29, BLACK);
-  tft.setTextSize(3);
-  tft.setCursor(9, 291);
-  tft.setTextColor(BLACK);
-  tft.print("HOLD");
+  tft.drawRect(6, 286, 75, 29, BLACK); 
+  tft.setTextSize(3); tft.setCursor(9, 291); tft.print("HOLD");
 
   //display settings button
-  tft.drawBitmap(206, 286, settingsButton, 30, 30, BLACK);
+  tft.drawBitmap(br_cornerButton[0], br_cornerButton[1], settingsButton, 30, 30, BLACK);
   
   }
-
-
-
-  
 
 void settingsPage(){
 
   screenState = "SETTINGS";
   
-  tft.fillScreen(backgroundColor);
-  tft.drawBitmap(280, 10, homeButton, 30, 30, BLACK); // pixel location of homepage: 280-310 x, 10-40 y
+  header();
   
-  tft.setTextSize(3);
-  tft.setTextColor(0x0000);
+  tft.setTextSize(4); tft.setCursor(26, 40); tft.print("Settings");
 
-  tft.setCursor(40,40);
-  tft.print("Settings");
+  tft.drawRect(settings_setPoints[0], settings_setPoints[1], settingsButtonSize[0], settingsButtonSize[1], BLACK); 
+  tft.setTextSize(2); tft.setCursor(61, 108); tft.print("Set Points");
+
+  tft.drawRect(settings_editTime[0], settings_editTime[1], settingsButtonSize[0], settingsButtonSize[1], BLACK);
+  tft.setTextSize(2); tft.setCursor(37, 172); tft.print("Edit Date/Time"); 
+
+  
+  tft.drawBitmap(206, 286, homeButton, 30, 30, BLACK);
  
   }
 
-bool isInTouchZone(uint16_t coord_arr[], int x_point, int y_point){
+void setPointsChoicePage(){
 
-    int zone_bound = 30; //makes a square of this many pixels to be touch zone
+  screenState = "SET_POINTS_CHOICE";
+  header();
 
-    if((coord_arr[0] < x_point) && (x_point < (coord_arr[0] + zone_bound))){
+  tft.setTextSize(3); tft.setCursor(31, 40); tft.print("Set Points");
 
-      if((coord_arr[1] < y_point) && (y_point < (coord_arr[0] + zone_bound))){
+  tft.drawRect(setPoints_weekdays[0], setPoints_weekdays[1], settingsButtonSize[0], settingsButtonSize[1], BLACK); 
+  tft.setTextSize(2); tft.setCursor(61, 108); tft.print("Weekdays");
+
+  tft.drawRect(setPoints_weekends[0], setPoints_weekends[1], settingsButtonSize[0], settingsButtonSize[1], BLACK);
+  tft.setTextSize(2); tft.setCursor(37, 172); tft.print("Weekends"); 
+
+  
+  tft.drawBitmap(206, 286, homeButton, 30, 30, BLACK);
+  }
+
+void setPointsWeekdaysPage(){
+  header();
+
+  tft.drawBitmap(206, 286, homeButton, 30, 30, BLACK);
+  }
+
+void setPointsWeekendsPage(){
+  header();
+
+  tft.drawBitmap(206, 286, homeButton, 30, 30, BLACK);
+  }
+
+void editDateTimePage(){
+
+  screenState = "EDIT_DATETIME";
+  header();
+  
+  tft.setTextSize(3); tft.setCursor(26, 40); tft.print("Edit Date/Time");
+  tft.drawBitmap(206, 286, homeButton, 30, 30, BLACK);
+  }
+  
+
+void header(){
+  tft.fillScreen(backgroundColor);
+  tft.setTextColor(BLACK);
+  tft.setTextSize(2); tft.setCursor(6,8); tft.print("Wed Oct 31 10:46 AM");
+}
+  
+
+bool isInTouchZone(uint16_t coord_arr[], int box_width, int box_height, int x_point, int y_point){
+    //box_width/height are the bounds of the actual object (character/square/etc) we are making the zone for
+
+    int margin = 4; //safe zone of 4 px
+    int x_min = coord_arr[0] - margin;
+    int y_min = coord_arr[1] - margin;
+    int x_max = coord_arr[0] + box_width + margin;
+    int y_max = coord_arr[1] + box_height + margin;
+
+    if((x_min < x_point) && (x_point < x_max)){
+
+      if((y_min < y_point) && (y_point < y_max)){
 
         return true;
       }
