@@ -31,6 +31,7 @@ uint16_t home_modeLeftArrow[] = {49, 240};
 uint16_t home_modeRightArrow[] = {153, 240};
 uint16_t home_holdButton[] = {0,0};
 
+
 uint16_t settings_setPoints[] = {30, 96};
 uint16_t settings_editTime[] = {30, 160};
 
@@ -227,6 +228,50 @@ if(screenState == "SET_POINTS_CHOICE"){
   }
 }
 
+
+
+if(screenState == "SETPOINTS_WEEKEND" || screenState == "SETPOINTS_WEEKDAY"){
+
+  //setpoint1
+  if(isInTouchZone(20, 220, 20, 8, 118)){
+
+    editDateTimePage();
+    return;
+  }
+
+  //setpoint2
+  if(isInTouchZone(setPoints_weekdays, settingsButtonSize[0], settingsButtonSize[1], p.x, p.y)){
+
+    editDateTimePage();
+    return;
+  }
+
+  //setpoint3
+  if(isInTouchZone(setPoints_weekdays, settingsButtonSize[0], settingsButtonSize[1], p.x, p.y)){
+
+    editDateTimePage();
+    return;
+  }
+
+  //setpoint4
+  if(isInTouchZone(setPoints_weekdays, settingsButtonSize[0], settingsButtonSize[1], p.x, p.y)){
+
+    editDateTimePage();
+    return;
+  }
+
+
+
+  //home button
+  if(isInTouchZone(br_cornerButton, bitmapLogoSize[0], bitmapLogoSize[1], p.x, p.y)){
+
+    homePage();
+    return;
+  }
+}
+
+
+
 if(screenState == "EDIT_DATETIME"){
 
   //home button
@@ -306,23 +351,143 @@ tft.drawRect(setPoints_weekdays[0], setPoints_weekdays[1], settingsButtonSize[0]
 tft.setTextSize(2); tft.setCursor(61, 108); tft.print("Weekdays");
 
 tft.drawRect(setPoints_weekends[0], setPoints_weekends[1], settingsButtonSize[0], settingsButtonSize[1], BLACK);
-tft.setTextSize(2); tft.setCursor(37, 172); tft.print("Weekends");
+tft.setTextSize(2); tft.setCursor(61, 172); tft.print("Weekends");
 
 
 tft.drawBitmap(206, 286, homeButton, 30, 30, BLACK);
 }
 
 void setPointsWeekdaysPage(){
+  screenState = "SETPOINTS_WEEKDAY";
 header();
+
+tft.setTextSize(2); tft.setCursor(10, 40); tft.print("Weekday Set Points");
+tft.setTextSize(2); tft.setCursor(10, 80); tft.print("Click one to edit");
+
+//set point 1
+
+tft.drawRect(8, 118, 220, 20, BLACK);
+tft.setTextSize(2); tft.setCursor(10, 120); tft.print("01:");
+tft.setTextSize(2); tft.setCursor(50, 120); tft.print("30");
+tft.setTextSize(2); tft.setCursor(90, 120); tft.print("PM");
+tft.setTextSize(2); tft.setCursor(140, 120); tft.print("70");tft.setTextSize(1); tft.print((char)247);
+tft.setTextSize(2); tft.setCursor(200, 120); tft.print("ON");
+
+//set point 2
+tft.drawRect(8, 158, 220, 20, BLACK);
+tft.setTextSize(2); tft.setCursor(10, 160); tft.print("01:");
+tft.setTextSize(2); tft.setCursor(50, 160); tft.print("30");
+tft.setTextSize(2); tft.setCursor(90, 160); tft.print("PM");
+tft.setTextSize(2); tft.setCursor(140, 160); tft.print("70");tft.setTextSize(1); tft.print((char)247);
+tft.setTextSize(2); tft.setCursor(200, 160); tft.print("ON");
+
+//set point 3
+tft.drawRect(8, 198, 220, 20, BLACK);
+tft.setTextSize(2); tft.setCursor(10, 200); tft.print("01:");
+tft.setTextSize(2); tft.setCursor(50, 200); tft.print("30");
+tft.setTextSize(2); tft.setCursor(90, 200); tft.print("PM");
+tft.setTextSize(2); tft.setCursor(140, 200); tft.print("70");tft.setTextSize(1); tft.print((char)247);
+tft.setTextSize(2); tft.setCursor(200, 200); tft.print("ON");
+
+
+//set point 4
+tft.drawRect(8, 238, 220, 20, BLACK);
+tft.setTextSize(2); tft.setCursor(10, 240); tft.print("01:");
+tft.setTextSize(2); tft.setCursor(50, 240); tft.print("30");
+tft.setTextSize(2); tft.setCursor(90, 240); tft.print("PM");
+tft.setTextSize(2); tft.setCursor(140, 240); tft.print("70");tft.setTextSize(1); tft.print((char)247);
+tft.setTextSize(2); tft.setCursor(200, 240); tft.print("ON");
+
 
 tft.drawBitmap(206, 286, homeButton, 30, 30, BLACK);
 }
 
 void setPointsWeekendsPage(){
+  screenState = "SETPOINTS_WEEKEND";
 header();
+
+tft.setTextSize(2); tft.setCursor(10, 40); tft.print("Weekend Set Points");
+tft.setTextSize(2); tft.setCursor(10, 80); tft.print("Click one to edit");
+
+//set point 1
+
+tft.drawRect(8, 118, 220, 20, BLACK);
+tft.setTextSize(2); tft.setCursor(10, 120); tft.print("01:");
+tft.setTextSize(2); tft.setCursor(50, 120); tft.print("30");
+tft.setTextSize(2); tft.setCursor(90, 120); tft.print("PM");
+tft.setTextSize(2); tft.setCursor(140, 120); tft.print("70");tft.setTextSize(1); tft.print((char)247);
+tft.setTextSize(2); tft.setCursor(200, 120); tft.print("ON");
+
+//set point 2
+tft.drawRect(8, 158, 220, 20, BLACK);
+tft.setTextSize(2); tft.setCursor(10, 160); tft.print("01:");
+tft.setTextSize(2); tft.setCursor(50, 160); tft.print("30");
+tft.setTextSize(2); tft.setCursor(90, 160); tft.print("PM");
+tft.setTextSize(2); tft.setCursor(140, 160); tft.print("70");tft.setTextSize(1); tft.print((char)247);
+tft.setTextSize(2); tft.setCursor(200, 160); tft.print("ON");
+
+//set point 3
+tft.drawRect(8, 198, 220, 20, BLACK);
+tft.setTextSize(2); tft.setCursor(10, 200); tft.print("01:");
+tft.setTextSize(2); tft.setCursor(50, 200); tft.print("30");
+tft.setTextSize(2); tft.setCursor(90, 200); tft.print("PM");
+tft.setTextSize(2); tft.setCursor(140, 200); tft.print("70");tft.setTextSize(1); tft.print((char)247);
+tft.setTextSize(2); tft.setCursor(200, 200); tft.print("ON");
+
+
+//set point 4
+tft.drawRect(8, 238, 220, 20, BLACK);
+tft.setTextSize(2); tft.setCursor(10, 240); tft.print("01:");
+tft.setTextSize(2); tft.setCursor(50, 240); tft.print("30");
+tft.setTextSize(2); tft.setCursor(90, 240); tft.print("PM");
+tft.setTextSize(2); tft.setCursor(140, 240); tft.print("70");tft.setTextSize(1); tft.print((char)247);
+tft.setTextSize(2); tft.setCursor(200, 240); tft.print("ON");
+
 
 tft.drawBitmap(206, 286, homeButton, 30, 30, BLACK);
 }
+
+
+int editSetPoint(){
+  
+  screenState = "EDIT_SETPOINT";
+  header();
+
+  tft.setTextSize(2); tft.setCursor(10, 40); tft.print("Edit Set Point");
+
+ // hours
+  tft.setTextSize(2); tft.setCursor(90, 70); tft.print("Hour");
+  tft.setTextSize(2); tft.setCursor(60, 90); tft.print("< ");
+  tft.setTextSize(2); tft.setCursor(90, 90); tft.print("00");
+  tft.setTextSize(2); tft.setCursor(120, 90); tft.print(" >");
+
+   // minutes
+  tft.setTextSize(2); tft.setCursor(80, 130); tft.print("Minute");
+  tft.setTextSize(2); tft.setCursor(60, 150); tft.print("< ");
+  tft.setTextSize(2); tft.setCursor(90, 150); tft.print("00");
+  tft.setTextSize(2); tft.setCursor(120, 150); tft.print(" >");
+
+   // AM/PM
+  tft.setTextSize(2); tft.setCursor(60, 180); tft.print("< ");
+  tft.setTextSize(2); tft.setCursor(90, 180); tft.print("AM");
+  tft.setTextSize(2); tft.setCursor(120, 180); tft.print(" >");
+
+   // degrees
+  tft.setTextSize(2); tft.setCursor(50, 210); tft.print("Temperature");
+  tft.setTextSize(2); tft.setCursor(60, 230); tft.print("< ");
+  tft.setTextSize(2); tft.setCursor(90, 230); tft.print("70");tft.setTextSize(2); tft.print((char)247);
+  tft.setTextSize(2); tft.setCursor(120, 230); tft.print(" >");
+
+   // on/off
+  tft.setTextSize(2); tft.setCursor(60, 270); tft.print("< ");
+  tft.setTextSize(2); tft.setCursor(90, 270); tft.print("ON");
+  tft.setTextSize(2); tft.setCursor(120, 270); tft.print(" >");
+  
+  tft.drawBitmap(206, 286, homeButton, 30, 30, BLACK);
+
+  return 0;
+ }
+
 
 void editDateTimePage(){
 
