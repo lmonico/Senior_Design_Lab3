@@ -23,20 +23,23 @@ Arduino Thermostat
 #define WHITE    0xFFFF
 // Define temperature sensor pin
 #define ONE_WIRE_BUS 5
+// Real time clock setup
+RTC_DS3231 rtc;
+char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 //Initialize cooling and heating LEDs
 int cooling_led = 3;
 int heating_led = 2;
 
-/* touch zone sizes */
 uint16_t arrowSize3[] = {15, 21}; //width, height of a size 3 arrow
 uint16_t bitmapLogoSize[] = {30, 30};
 uint16_t settingsButtonSize[] = {180, 40};
-uint16_t setPointButtonSize[] = {220, 20};
 
-/* touch zone origins (top left corner) */
-uint16_t home_setLeftArrow[] = {60, 176}; uint16_t home_setRightArrow[] = {138, 176};
-uint16_t home_modeLeftArrow[] = {49, 240}; uint16_t home_modeRightArrow[] = {153, 240};
+uint16_t home_setLeftArrow[] = {60, 176};
+uint16_t home_setRightArrow[] = {138, 176};
+uint16_t home_modeLeftArrow[] = {49, 240};
+uint16_t home_modeRightArrow[] = {153, 240};
 uint16_t home_holdButton[] = {0,0};
+
 
 uint16_t settings_setPoints[] = {30, 96};
 uint16_t settings_editTime[] = {30, 160};
@@ -44,19 +47,10 @@ uint16_t settings_editTime[] = {30, 160};
 uint16_t setPoints_weekdays[] = {30, 96};
 uint16_t setPoints_weekends[] = {30, 160};
 
-uint16_t edit_HourArrows[][2] = {{120, 61}, {177, 61}};
-uint16_t edit_MinArrows[][2] = {{120, 105}, {177, 105}};
-uint16_t edit_HalfArrows[][2] = {{120, 149}, {177, 149}};
-uint16_t edit_TempArrows[][2] = {{120, 193}, {177, 193}};
-uint16_t edit_StatusArrows[][2] = {{120, 237}, {177, 237}};
-
-//first index is which button, second index is which x/y coord 
-uint16_t setPointPos[][2] = {{8, 118}, {8, 158}, {8, 198}, {8, 238}};
-
 uint16_t br_cornerButton[] = {206, 286};
 
-/* global information variables */
 uint16_t backgroundColor = WHITE;
+
 String screenState = "";
 int setTemp = 75;
 int currentTemp = 0;
@@ -64,16 +58,6 @@ int oldTemp = 0;
 String dateTime = "Wed Oct 31 10:46 AM";
 String modes[] = {"A/C", "HEAT", "AUTO", "OFF"};
 int currentModeIndex = 0;
-
-struct setPoint {
-  int hour;
-  int minute;
-  bool half;
-  int temp;
-  bool status;
-};
-
-setPoint setPointsArr[] {};
 
 //variabled for thermo
 OneWire oneWire(ONE_WIRE_BUS);
@@ -114,9 +98,7 @@ Adafruit_FT6206 ctp = Adafruit_FT6206();
 #define TFT_DC 9
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
-/*
- * Setup
- */
+
 void setup(void) {
 while (!Serial);     // used for leonardo debugging
 
@@ -139,38 +121,41 @@ tft.setRotation(2);
 homePage();
 }
 
-/*
- * Main Loop
- */
+
 void loop() {
   oldTemp = currentTemp;
   sensors.requestTemperatures();
   currentTemp = (int)((sensors.getTempCByIndex(0) * 1.8) + 32);
- 
+  Serial.print("Current: ");
+  Serial.print(currentTemp);
+  Serial.print("Old: ");
+  Serial.print(oldTemp);
+
+
 // Retrieve a point
 TS_Point p = ctp.getPoint();
 
 
 if(screenState == "HOME"){
-  
+  Serial.print("IN HOME");
   if(oldTemp != currentTemp)
   {
+    Serial.print("HERE");
     homePage();
   }
-  
-  //left set temp arrow
+  //set temp arrows
   if(isInTouchZone(home_setLeftArrow, arrowSize3[0], arrowSize3[1], p.x, p.y)){
     setTemp = setTemp - 1;
     homePage();
+
   }
 
-  //right set temp arrow
   if(isInTouchZone(home_setRightArrow, arrowSize3[0], arrowSize3[1], p.x, p.y)){
     setTemp = setTemp + 1;
     homePage();
+
   }
-  
-  //left mode arrow
+
   if(isInTouchZone(home_modeLeftArrow, arrowSize3[0], arrowSize3[1], p.x, p.y)){
 
     if (currentModeIndex > 0){
@@ -180,9 +165,9 @@ if(screenState == "HOME"){
       currentModeIndex = 3;
     }
     homePage();
+
   }
 
-  //right mode arrow
   if(isInTouchZone(home_modeRightArrow, arrowSize3[0], arrowSize3[1], p.x, p.y)){
 
     if (currentModeIndex < 3){
@@ -192,6 +177,7 @@ if(screenState == "HOME"){
       currentModeIndex = 0;
     }
     homePage();
+
   }
 
 
@@ -207,14 +193,15 @@ if(screenState == "HOME"){
 
 if(screenState == "SETTINGS"){
 
-  //Set points navigation button
+
+
   if(isInTouchZone(settings_setPoints, settingsButtonSize[0], settingsButtonSize[1], p.x, p.y)){
 
     setPointsChoicePage();
     return;
+
   }
 
-  //edit date/time navigation button
   if(isInTouchZone(settings_editTime, settingsButtonSize[0], settingsButtonSize[1], p.x, p.y)){
 
     editDateTimePage();
@@ -232,14 +219,13 @@ if(screenState == "SETTINGS"){
 
 if(screenState == "SET_POINTS_CHOICE"){
 
-  //Weekday set points button
+
   if(isInTouchZone(setPoints_weekdays, settingsButtonSize[0], settingsButtonSize[1], p.x, p.y)){
 
     setPointsWeekdaysPage();
     return;
   }
 
-  //Weekend set points button
   if(isInTouchZone(setPoints_weekends, settingsButtonSize[0], settingsButtonSize[1], p.x, p.y)){
 
     setPointsWeekendsPage();
@@ -256,55 +242,36 @@ if(screenState == "SET_POINTS_CHOICE"){
 
 
 
-if(screenState == "SETPOINTS_WEEKDAY" || screenState == "SETPOINTS_WEEKEND"){
+if(screenState == "SETPOINTS_WEEKEND" || screenState == "SETPOINTS_WEEKDAY"){
 
-  //Set point button position 1
-  if(isInTouchZone(setPointPos[0], setPointButtonSize[0], setPointButtonSize[1], p.x, p.y)){
+  //setpoint1
+  if(isInTouchZone(20, 220, 20, 8, 118)){
 
-    if(screenState == "SETPOINTS_WEEKDAY"){
-      editSetPoint(0);
-    }
-    else if(screenState == "SETPOINTS_WEEKEND"){
-      editSetPoint(4);
-    }
+    editDateTimePage();
     return;
   }
 
-   //Set point button position 2
-  if(isInTouchZone(setPointPos[1], setPointButtonSize[0], setPointButtonSize[1], p.x, p.y)){
+  //setpoint2
+  if(isInTouchZone(setPoints_weekdays, settingsButtonSize[0], settingsButtonSize[1], p.x, p.y)){
 
-    if(screenState == "SETPOINTS_WEEKDAY"){
-      editSetPoint(1);
-    }
-    else if(screenState == "SETPOINTS_WEEKEND"){
-      editSetPoint(5);
-    }
+    editDateTimePage();
     return;
   }
 
-   //Set point button position 3
-  if(isInTouchZone(setPointPos[2], setPointButtonSize[0], setPointButtonSize[1], p.x, p.y)){
+  //setpoint3
+  if(isInTouchZone(setPoints_weekdays, settingsButtonSize[0], settingsButtonSize[1], p.x, p.y)){
 
-    if(screenState == "SETPOINTS_WEEKDAY"){
-      editSetPoint(2);
-    }
-    else if(screenState == "SETPOINTS_WEEKEND"){
-      editSetPoint(6);
-    }
+    editDateTimePage();
     return;
   }
 
-   //Set point button position 4
-  if(isInTouchZone(setPointPos[3], setPointButtonSize[0], setPointButtonSize[1], p.x, p.y)){
+  //setpoint4
+  if(isInTouchZone(setPoints_weekdays, settingsButtonSize[0], settingsButtonSize[1], p.x, p.y)){
 
-    if(screenState == "SETPOINTS_WEEKDAY"){
-      editSetPoint(3);
-    }
-    else if(screenState == "SETPOINTS_WEEKEND"){
-      editSetPoint(7);
-    }
+    editDateTimePage();
     return;
   }
+
 
 
   //home button
@@ -313,10 +280,6 @@ if(screenState == "SETPOINTS_WEEKDAY" || screenState == "SETPOINTS_WEEKEND"){
     homePage();
     return;
   }
-}
-
-if(screenState == "EDIT_SETPOINT"){
-  
 }
 
 
@@ -330,8 +293,6 @@ if(screenState == "EDIT_DATETIME"){
     return;
   }
 }
-
-
 // Wait for a touch
 //if (! ctp.touched()) {
   //return;
@@ -342,9 +303,7 @@ if(screenState == "EDIT_DATETIME"){
 }
 
 
-/*
- * Home Page
- */
+
 void homePage(){
 
 screenState = "HOME";
@@ -374,9 +333,6 @@ tft.drawBitmap(br_cornerButton[0], br_cornerButton[1], settingsButton, 30, 30, B
 
 }
 
-/*
- * Settings Page
- */
 void settingsPage(){
 
 screenState = "SETTINGS";
@@ -391,12 +347,11 @@ tft.setTextSize(2); tft.setCursor(61, 108); tft.print("Set Points");
 tft.drawRect(settings_editTime[0], settings_editTime[1], settingsButtonSize[0], settingsButtonSize[1], BLACK);
 tft.setTextSize(2); tft.setCursor(37, 172); tft.print("Edit Date/Time");
 
+
 tft.drawBitmap(206, 286, homeButton, 30, 30, BLACK);
+
 }
 
-/*
- * Set points choice navigation
- */
 void setPointsChoicePage(){
 
 screenState = "SET_POINTS_CHOICE";
@@ -410,14 +365,11 @@ tft.setTextSize(2); tft.setCursor(61, 108); tft.print("Weekdays");
 tft.drawRect(setPoints_weekends[0], setPoints_weekends[1], settingsButtonSize[0], settingsButtonSize[1], BLACK);
 tft.setTextSize(2); tft.setCursor(61, 172); tft.print("Weekends");
 
+
 tft.drawBitmap(206, 286, homeButton, 30, 30, BLACK);
 }
 
-/*
- * Set points
- */
 void setPointsWeekdaysPage(){
-
   screenState = "SETPOINTS_WEEKDAY";
 header();
 
@@ -508,40 +460,40 @@ tft.drawBitmap(206, 286, homeButton, 30, 30, BLACK);
 }
 
 
-int editSetPoint(int pointNum){
+int editSetPoint(){
   
   screenState = "EDIT_SETPOINT";
   header();
 
-  printCenteredText("Edit Set Point", 2, 32);
+  tft.setTextSize(2); tft.setCursor(10, 40); tft.print("Edit Set Point");
 
  // hours
-  tft.setTextSize(3); tft.setCursor(20, 61); tft.print("Hour:");
-  tft.setTextSize(3); tft.setCursor(120, 61); tft.print("< ");
-  tft.setTextSize(3); tft.setCursor(150, 61); tft.print("00");
-  tft.setTextSize(3); tft.setCursor(177, 61); tft.print(" >");
+  tft.setTextSize(2); tft.setCursor(90, 70); tft.print("Hour");
+  tft.setTextSize(2); tft.setCursor(60, 90); tft.print("< ");
+  tft.setTextSize(2); tft.setCursor(90, 90); tft.print("00");
+  tft.setTextSize(2); tft.setCursor(120, 90); tft.print(" >");
 
    // minutes
-  tft.setTextSize(3); tft.setCursor(20, 105); tft.print("Min:");
-  tft.setTextSize(3); tft.setCursor(120, 105); tft.print("< ");
-  tft.setTextSize(3); tft.setCursor(150, 105); tft.print("00");
-  tft.setTextSize(3); tft.setCursor(177, 105); tft.print(" >");
+  tft.setTextSize(2); tft.setCursor(80, 130); tft.print("Minute");
+  tft.setTextSize(2); tft.setCursor(60, 150); tft.print("< ");
+  tft.setTextSize(2); tft.setCursor(90, 150); tft.print("00");
+  tft.setTextSize(2); tft.setCursor(120, 150); tft.print(" >");
 
    // AM/PM
-  tft.setTextSize(3); tft.setCursor(120, 149); tft.print("< ");
-  tft.setTextSize(3); tft.setCursor(150, 149); tft.print("AM");
-  tft.setTextSize(3); tft.setCursor(177, 149); tft.print(" >");
+  tft.setTextSize(2); tft.setCursor(60, 180); tft.print("< ");
+  tft.setTextSize(2); tft.setCursor(90, 180); tft.print("AM");
+  tft.setTextSize(2); tft.setCursor(120, 180); tft.print(" >");
 
    // degrees
-  tft.setTextSize(3); tft.setCursor(20, 193); tft.print("Temp:");
-  tft.setTextSize(3); tft.setCursor(120, 193); tft.print("< ");
-  tft.setTextSize(3); tft.setCursor(150, 193); tft.print("70");tft.setTextSize(2); tft.print((char)247);
-  tft.setTextSize(3); tft.setCursor(177, 193); tft.print(" >");
+  tft.setTextSize(2); tft.setCursor(50, 210); tft.print("Temperature");
+  tft.setTextSize(2); tft.setCursor(60, 230); tft.print("< ");
+  tft.setTextSize(2); tft.setCursor(90, 230); tft.print("70");tft.setTextSize(2); tft.print((char)247);
+  tft.setTextSize(2); tft.setCursor(120, 230); tft.print(" >");
 
    // on/off
-  tft.setTextSize(3); tft.setCursor(120, 237); tft.print("< ");
-  tft.setTextSize(3); tft.setCursor(150, 237); tft.print("ON");
-  tft.setTextSize(3); tft.setCursor(177, 237); tft.print(" >");
+  tft.setTextSize(2); tft.setCursor(60, 270); tft.print("< ");
+  tft.setTextSize(2); tft.setCursor(90, 270); tft.print("ON");
+  tft.setTextSize(2); tft.setCursor(120, 270); tft.print(" >");
   
   tft.drawBitmap(206, 286, homeButton, 30, 30, BLACK);
 
@@ -572,10 +524,8 @@ bool isInTouchZone(uint16_t coord_arr[], int box_width, int box_height, int x_po
   int margin = 4; //safe zone of 4 px
   int x_min = coord_arr[0] - margin;
   int y_min = coord_arr[1] - margin;
-  int x_max = coord_arr[0] + box_width + (margin);
-  int y_max = coord_arr[1] + box_height + (margin);
-
-  tft.drawRect(x_min, y_min, (x_max-x_min), (y_max-y_min), RED);
+  int x_max = coord_arr[0] + box_width + margin;
+  int y_max = coord_arr[1] + box_height + margin;
 
   if((x_min < x_point) && (x_point < x_max)){
 
@@ -587,16 +537,4 @@ bool isInTouchZone(uint16_t coord_arr[], int box_width, int box_height, int x_po
   else {
     return false;
   }
-}
-
-void printCenteredText(String text, uint16_t size, uint16_t y_pos){
-
-  uint16_t x_pos = (240 - ((text.length()  * 5 * size) + ((text.length() - 1) * size))) / 2;
-
-  Serial.println("print centered text info");
-  Serial.println(text.length());
-  Serial.println(x_pos);
-
-  tft.setTextSize(size); tft.setCursor(x_pos, y_pos); tft.print(text);
- 
 }
