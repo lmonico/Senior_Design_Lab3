@@ -2,6 +2,8 @@
 Arduino Thermostat
 ****************************************************/
 
+#include <RTClib.h> //for Real Time Clock
+#include <EEPROM.h> //for storage
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <SPI.h>       // this is needed for display
 #include <Adafruit_ILI9341.h>
