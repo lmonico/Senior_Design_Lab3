@@ -9,6 +9,7 @@ Arduino Thermostat
 #include <Adafruit_FT6206.h>
 #include <OneWire.h>   //for thermo
 #include <DallasTemperature.h> //for thermo
+#include <EEPROM.h> //for mem
 
 // Color definitions
 #define BLACK    0x0000
@@ -19,7 +20,16 @@ Arduino Thermostat
 #define MAGENTA  0xF81F
 #define YELLOW   0xFFE0
 #define WHITE    0xFFFF
-#define ONE_WIRE_BUS 5
+#define ONE_WIRE_BUS 5 //pin for thermo
+// mem addresses of set points in eeprom
+#define eeAddress0 = 0
+#define eeAddress1 = sizeof(setPoint)
+#define eeAddress2 = 2*sizeof(setPoint)
+#define eeAddress3 = 3*sizeof(setPoint)
+#define eeAddress4 = 4*sizeof(setPoint)
+#define eeAddress5 = 5*sizeof(setPoint)
+#define eeAddress6 = 6*sizeof(setPoint)
+#define eeAddress7 = 7*sizeof(setPoint)
 
 /* touch zone sizes */
 uint16_t arrowSize3[] = {15, 21}; //width, height of a size 3 arrow
@@ -59,6 +69,7 @@ String dateTime = "Wed Oct 31 10:46 AM";
 String modes[] = {"A/C", "HEAT", "AUTO", "OFF"};
 int currentModeIndex = 0;
 
+//mem variables
 struct setPoint {
  int hour;
  int minute;
@@ -67,7 +78,7 @@ struct setPoint {
  bool status;
 };
 
-setPoint setPointsArr[] {};
+setPoint setPoints[8];
 
 //variabled for thermo
 OneWire oneWire(ONE_WIRE_BUS);
@@ -123,6 +134,12 @@ if (! ctp.begin(40)) {  // pass in 'sensitivity' coefficient
  while (1);
 }
 
+int memAdd = 0;
+for(int i = 0; i < 8; i++)
+{
+  EEPROM.get(memAdd, setPoints[i]);
+  memAdd += sizeof(setPoint);
+}
 //if cooling
 backgroundColor = WHITE;
 
