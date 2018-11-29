@@ -2,6 +2,8 @@
 Arduino Thermostat
 ****************************************************/
 
+#include <RTClib.h> //for Real Time Clock
+#include <EEPROM.h> //for storage
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <SPI.h>       // this is needed for display
 #include <Adafruit_ILI9341.h>
@@ -19,7 +21,14 @@ Arduino Thermostat
 #define MAGENTA  0xF81F
 #define YELLOW   0xFFE0
 #define WHITE    0xFFFF
+// Define temperature sensor pin
 #define ONE_WIRE_BUS 5
+// Real time clock setup
+RTC_DS3231 rtc;
+char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+//Initialize cooling and heating LEDs
+int cooling_led = 3;
+int heating_led = 2;
 
 uint16_t arrowSize3[] = {15, 21}; //width, height of a size 3 arrow
 uint16_t bitmapLogoSize[] = {30, 30};
@@ -101,6 +110,9 @@ if (! ctp.begin(40)) {  // pass in 'sensitivity' coefficient
   Serial.println("Couldn't start FT6206 touchscreen controller");
   while (1);
 }
+
+pinMode(cooling_led, OUTPUT);
+pinMode(heating_led, OUTPUT);
 
 //if cooling
 backgroundColor = WHITE;
