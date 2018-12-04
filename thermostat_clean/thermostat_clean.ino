@@ -18,13 +18,14 @@ Arduino Thermostat
 // Color definitions
 #define BLACK    0x0000
 #define CYAN     0x07FF
+#define YELLOW   0xFFE0 
 #define RED      0xF800
 #define WHITE    0xFFFF
 #define ONE_WIRE_BUS 5
 
 /* touch zone sizes */
 int bitmapLogoSize[] = {30, 30};
-int footerButtonSize[] = {75, 29};
+int footerButtonSize[] = {80, 33};
 int settingsButtonSize[] = {180, 40};
 int setPointButtonSize[] = {220, 20};
 int numpadCellSize[] = {74, 45};
@@ -63,7 +64,7 @@ int editDateTime_origins[][2] = {
 };
 
 int footer_origins[][2] = {
-  {6, 286},   //0: bottom left button
+  {4, 284},   //0: bottom left button
   {0,0},      //1: center button
   {206, 286}  //2: right button
 };
@@ -80,7 +81,7 @@ int oldTemp = 0;
 
 bool hold = false;
 
-String currentMode = "A/C";
+String currentMode = "AUTO";
 struct arrWrap {int arr[2];};
 
 String halfArray[] = {"AM", "PM"};
@@ -182,10 +183,11 @@ void setup(void) {
   }
 
   backgroundColor = WHITE;
-
+  hold = false;
   tft.setRotation(2);
   screenState = "Home";
   homePage();
+     
 
 }
 
@@ -254,10 +256,8 @@ void loop() {
   {
     if(setTemp < currentTemp){
       if(currentMode == "A/C" || currentMode == "AUTO"){
-        //backgroundColor = CYAN;
         digitalWrite(coolingLEDPin, HIGH);
         digitalWrite(heatingLEDPin, LOW);
-        //homePage();
       }
       else{
         digitalWrite(coolingLEDPin, LOW);
@@ -267,10 +267,8 @@ void loop() {
     else if(setTemp > currentTemp)
     {
       if(currentMode == "HEAT" || currentMode == "AUTO"){
-        //backgroundColor = RED;
         digitalWrite(coolingLEDPin, LOW);
         digitalWrite(heatingLEDPin, HIGH);
-        //homePage();
       }
       else{
         digitalWrite(coolingLEDPin, LOW);
@@ -279,18 +277,14 @@ void loop() {
     }
     else if(currentMode == "OFF")
     {
-      //backgroundColor = WHITE;
       digitalWrite(coolingLEDPin, LOW);
       digitalWrite(heatingLEDPin, LOW);
-      //homePage();
     }
   }
   else
   {
-      //backgroundColor = WHITE;
       digitalWrite(coolingLEDPin, LOW);
       digitalWrite(heatingLEDPin, LOW);
-      //homePage();
   }
 
 
@@ -332,6 +326,21 @@ void loop() {
 
       screenState = "Settings";
     }
+
+    if(isInTouchZone(footer_origins[0], footerButtonSize, p.x, p.y, 0)){
+      if(hold){
+        hold = false;
+        //display hold button
+        tft.drawRect(footer_origins[0][0], footer_origins[0][1], footerButtonSize[0], footerButtonSize[1], BLACK);
+        tft.setTextColor(BLACK, backgroundColor); tft.setTextSize(3); tft.setCursor(9, 291); tft.print("HOLD");
+       }
+       else if(!hold){
+         hold = true;
+         tft.drawRect(footer_origins[0][0], footer_origins[0][1], footerButtonSize[0], footerButtonSize[1], BLACK);
+         tft.setTextColor(BLACK, YELLOW); tft.setTextSize(3); tft.setCursor(9, 291); tft.print("HOLD");
+       }
+    }
+
 
   }
 
@@ -407,8 +416,15 @@ void homePage(){
 
 
   //display hold button
-  tft.drawRect(6, 286, 75, 29, BLACK);
-  tft.setTextSize(3); tft.setCursor(9, 291); tft.print("HOLD");
+  if(!hold){
+    tft.drawRect(footer_origins[0][0], footer_origins[0][1], footerButtonSize[0], footerButtonSize[1], BLACK);
+    tft.setTextColor(BLACK, backgroundColor); tft.setTextSize(3); tft.setCursor(9, 291); tft.print("HOLD");
+  }
+  else if(hold){
+    tft.drawRect(footer_origins[0][0], footer_origins[0][1], footerButtonSize[0], footerButtonSize[1], BLACK);
+    tft.setTextColor(BLACK, YELLOW); tft.setTextSize(3); tft.setCursor(9, 291); tft.print("HOLD");
+  }
+       
 
   //display settings button
   tft.drawBitmap(footer_origins[2][0], footer_origins[2][1], settingsButton, 30, 30, BLACK);
