@@ -1,3 +1,5 @@
+#include <RTClib.h>
+
 /***************************************************
 Arduino Thermostat
 ****************************************************/
@@ -26,6 +28,7 @@ int footerButtonSize[] = {75, 29};
 int settingsButtonSize[] = {180, 40};
 int setPointButtonSize[] = {220, 20};
 int numpadCellSize[] = {74, 45};
+
 
 /* touch zone origins (top left corner) */
 int home_origins[][2] = {
@@ -65,6 +68,8 @@ int footer_origins[][2] = {
   {206, 286}  //2: right button
 };
 
+int dateTime_origin[] = {-1, 8};
+
 /* global information variables */
 uint16_t backgroundColor = WHITE;
 String screenState = "";
@@ -80,11 +85,9 @@ String halfArray[] = {"AM", "PM"};
 
 String statusArray[] = {"ON", "OFF"};
 
-String dayArray[] = {/*"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"*/};
-
 String padNums[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "<", "0"};
 
-String monthArray[] = {/*"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"*/};
+String dayArray[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
 String setPointsInfo[4];
 
@@ -96,18 +99,12 @@ struct setPoint {
   bool status;
 };
 
-struct myDateTime {
-  int hour;
-  int minute;
-  String half;
-  String day_text;
-  String month;
-  int day_num;
-};
+RTC_DS3231 rtc;
+
+String currentDateTime;
+String oldDateTime;
 
 setPoint setPointsArr[8];
-
-myDateTime dateTime = {11, 30, "AM", "Wed", "Oct", 30};
 
 int heatingLEDPin = 2;
 int coolingLEDPin = 3;
@@ -165,6 +162,13 @@ void setup(void) {
     while (1);
   }
 
+  if(!rtc.begin()){
+    Serial.println("Couldn't find RTC");
+    while(1);
+  }
+
+  currentDateTime = dateTimeToString(rtc.now());
+
   pinMode(heatingLEDPin, OUTPUT);
   pinMode(coolingLEDPin, INPUT);
 
@@ -187,6 +191,15 @@ void setup(void) {
  * Main Loop
  */
 void loop() {
+
+  oldDateTime = currentDateTime;
+  currentDateTime = dateTimeToString(rtc.now());
+  
+  if(oldDateTime != currentDateTime){
+
+      printText(dateTime_origin, currentDateTime, 2);
+  }
+  
   oldTemp = currentTemp;
   sensors.requestTemperatures();
   currentTemp = (uint8_t)((sensors.getTempCByIndex(0) * 1.8) + 32);
@@ -316,32 +329,8 @@ void loop() {
 
   if(screenState == "Edit Date/Time"){
 
-
-
-     if(isInTouchZone(editDateTime_origins[0], textSize(String(dateTime.hour), 4).arr, p.x, p.y, 4)){
-        dateTime.hour = numpad("Hour", dateTime.hour); editDateTimePage();
-     }
-     else if(isInTouchZone(editDateTime_origins[2], textSize(String(dateTime.minute), 4).arr, p.x, p.y, 4)){
-        dateTime.minute = numpad("Minute", dateTime.minute); editDateTimePage();
-     }
-     else if(isInTouchZone(editDateTime_origins[3], textSize(dateTime.half, 4).arr, p.x, p.y, 4)){
-        dateTime.half = setUpButtons(halfArray, 2, "Select AM/PM", false, ""); editDateTimePage();
-     }
-     else if(isInTouchZone(editDateTime_origins[4], textSize(dateTime.day_text, 4).arr, p.x, p.y, 4)){
-        dateTime.day_text = setUpButtons(dayArray, 2, "Select Day", false, ""); editDateTimePage();
-     }
-     else if(isInTouchZone(editDateTime_origins[5], textSize(dateTime.month, 4).arr, p.x, p.y, 4)){
-        dateTime.month = monthArray[numpad("Month", 12) - 1]; editDateTimePage();
-     }
-     else if(isInTouchZone(editDateTime_origins[6], textSize(String(dateTime.day_num), 4).arr, p.x, p.y, 4)){
-        dateTime.day_num = numpad("Day", dateTime.day_num); editDateTimePage();
-     }
-     else if(isInTouchZone(editDateTime_origins[7], textSize("SAVE", 4).arr, p.x, p.y, 4)){
-        screenState = "Settings";
-     }
-
-     editDateTimePage();
-   }
+    screenState = editDateTime();
+  }
 
 }
 
@@ -424,30 +413,79 @@ struct setPoint editSetPoint(struct setPoint setpoint){
 }
 
 
-void editDateTimePage(){
+String editDateTime(){
 
+  bool save = false;
+  uint8_t month = rtc.now().month();
+    uint8_t day = rtc.now().day();
+    uint8_t hour = rtc.now().hour();
+    uint8_t minute = rtc.now().minute();
+    String half = "AM";
+    
+    String minuteString = ""; 
+    if(hour > 12){
+      half = "PM";
+      hour -= 12;
+    }
+    
 
-  //screenState = "Edit Date/Time";
-  header();
+  while(!save){
 
-  int editDateTimeText[] = {-1, 32};
-  printText(editDateTimeText, "Edit Date/Time", 2);
+    if(minute < 10){
+      minuteString = "0" + String(minute);
+    }
+    else{
+      minuteString = String(minute);
+    }
+    
+    header();
+  
+    int editDateTimeText[] = {-1, 32};
+    printText(editDateTimeText, "Edit Date/Time", 2);
+    
+    
+    printText(editDateTime_origins[0], String(hour), 4);
+    printText(editDateTime_origins[1], ":", 4);
+    printText(editDateTime_origins[2], minuteString, 4);
+    printText(editDateTime_origins[3], half, 4);
+    printText(editDateTime_origins[5], String(month), 4);
+    printText(editDateTime_origins[6], String(day), 4);
+    printText(editDateTime_origins[7], "SAVE", 3);
 
-  printText(editDateTime_origins[0], String(dateTime.hour), 4);
-  printText(editDateTime_origins[1], ":", 4);
-  printText(editDateTime_origins[2], String(dateTime.minute), 4);
-  printText(editDateTime_origins[3], dateTime.half, 4);
-  printText(editDateTime_origins[4], dateTime.day_text, 4);
-  printText(editDateTime_origins[5], dateTime.month, 4);
-  printText(editDateTime_origins[6], String(dateTime.day_num), 4);
-  printText(editDateTime_origins[7], "SAVE", 3);
+    while(!ctp.touched()) {} //wait for touch
+    TS_Point p = ctp.getPoint();  // Retrieve a point
+
+    if(isInTouchZone(editDateTime_origins[0], textSize(String(hour), 4).arr, p.x, p.y, 4)){
+        hour = numpad("Hour", hour); 
+    }
+    else if(isInTouchZone(editDateTime_origins[2], textSize(minuteString, 4).arr, p.x, p.y, 4)){
+        minute = numpad("Minute", minute); 
+    }
+    else if(isInTouchZone(editDateTime_origins[3], textSize(half, 4).arr, p.x, p.y, 4)){
+        half = setUpButtons(halfArray, 2, "Select AM/PM", false, "");
+    }
+    else if(isInTouchZone(editDateTime_origins[5], textSize(String(month), 4).arr, p.x, p.y, 4)){
+        month = numpad("Month", month);
+    }
+    else if(isInTouchZone(editDateTime_origins[6], textSize(String(day), 4).arr, p.x, p.y, 4)){
+        day = numpad("Day", day);
+    }
+    else if(isInTouchZone(editDateTime_origins[7], textSize("SAVE", 4).arr, p.x, p.y, 4)){
+
+        if(half == "PM"){
+          hour += 12;
+        }
+        rtc.adjust(DateTime(2018, month, day, hour, minute, 0));
+        return "Settings";
+    }
+  }
 }
 
 
 void header(){
 tft.fillScreen(backgroundColor);
 tft.setTextColor(BLACK);
-tft.setTextSize(2); tft.setCursor(6,8); tft.print("Wed Oct 31 10:46 AM");
+printText(dateTime_origin, currentDateTime, 2);
 }
 
 void footer(){
@@ -619,4 +657,23 @@ String setPointToString(struct setPoint setpoint){
   if(setpoint.status==true){status = "ON";}
   if(setpoint.status==false){status = "OFF";}
   return String(setpoint.hour) + ":" + String(setpoint.minute) + " " + half + " " + String(setpoint.temp) + ((char)247) + " " + status;
+}
+
+String dateTimeToString(DateTime dateTime){
+
+  String half = "AM";
+  int hour = dateTime.hour();
+  String minute = ""; 
+  if(hour > 12){
+    half = "PM";
+    hour -= 12;
+  }
+  if(dateTime.minute() < 10){
+    minute = "0" + String(dateTime.minute());
+  }
+  else{
+    minute = String(dateTime.minute());
+  }
+
+  return String(dayArray[dateTime.dayOfTheWeek()]) + " " + String(dateTime.month()) + "/" + String(dateTime.day()) + " " + String(hour) + ":" + minute + " " + half;
 }
