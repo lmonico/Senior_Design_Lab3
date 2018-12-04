@@ -79,7 +79,7 @@ String statusArray[] = {"ON", "OFF"};
 
 String dayArray[] = {/*"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"*/};
 
-String padNums[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "<", "0"};
+String padNums[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "<", "0"};
 
 String monthArray[] = {/*"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"*/};
 
@@ -189,7 +189,8 @@ void loop() {
   if(oldTemp != currentTemp && screenState == "Home") {
       printTemp(home_origins[0], currentTemp, 11); 
   }
-
+  
+  
   if(!ctp.touched()){
     return;
   }
