@@ -20,16 +20,6 @@ Arduino Thermostat
 #define WHITE    0xFFFF
 #define ONE_WIRE_BUS 5
 
-//mem addresses of set points in eeprom
-#define eeAddress0 = 0
-#define eeAddress1 = sizeof(setPoint)
-#define eeAddress2 = 2*sizeof(setPoint)
-#define eeAddress3 = 3*sizeof(setPoint)
-#define eeAddress4 = 4*sizeof(setPoint)
-#define eeAddress5 = 5*sizeof(setPoint)
-#define eeAddress6 = 6*sizeof(setPoint)
-#define eeAddress7 = 7*sizeof(setPoint)
-
 /* touch zone sizes */
 int bitmapLogoSize[] = {30, 30};
 int footerButtonSize[] = {75, 29};
@@ -178,16 +168,12 @@ void setup(void) {
   pinMode(heatingLEDPin, OUTPUT);
   pinMode(coolingLEDPin, INPUT);
 
-  setPointsArr[0] = {10,30,"AM",76,"ON"};
-  setPointsArr[1] = {11,30,"AM",76,"ON"};
-  setPointsArr[2] = {12,30,"AM",76,"ON"};
-  setPointsArr[3] = {12,45,"AM",76,"ON"};
-  setPointsArr[4] = {10,30,"AM",76,"ON"};
-  setPointsArr[5] = {11,30,"AM",76,"ON"};
-  setPointsArr[6] = {12,30,"AM",76,"ON"};
-  setPointsArr[7] = {12,45,"AM",76,"ON"};
-
-
+  int memAdd = 0;
+  for(int i = 0; i < 8; i++)
+  {
+    EEPROM.get(memAdd, setPointsArr[i]);
+    memAdd += sizeof(setPoint);
+  }
 
   backgroundColor = WHITE;
 
@@ -208,7 +194,7 @@ void loop() {
   if(oldTemp != currentTemp && screenState == "Home") {
       printTemp(home_origins[0], currentTemp, 11);
   }
-  
+
   if(setTemp != currentTemp && screenState == "Home")
   {
     if(setTemp < currentTemp){
@@ -224,7 +210,7 @@ void loop() {
       }
     }
     else if(setTemp > currentTemp)
-    { 
+    {
       if(currentMode == "HEAT" || currentMode == "AUTO"){
         //backgroundColor = RED;
         digitalWrite(coolingLEDPin, LOW);
@@ -251,8 +237,8 @@ void loop() {
       digitalWrite(heatingLEDPin, LOW);
       //homePage();
   }
-  
-  
+
+
   if(!ctp.touched()){
     return;
   }
@@ -304,6 +290,7 @@ void loop() {
    for(int i = 0; i < 4; i++){
     if(screenState == setPointsInfo[i]){
       setPointsArr[i] = editSetPoint(setPointsArr[i]);
+      EEPROM.put(i*sizeof(setPoint), setPointsArr[i]);
       screenState = "Weekdays";
     }
    }
@@ -321,6 +308,7 @@ void loop() {
 
       if(screenState == setPointsInfo[i]){
         setPointsArr[i+4] = editSetPoint(setPointsArr[i+4]);
+        EEPROM.put((i+4)*sizeof(setPoint), setPointsArr[i+4]);
         screenState = "Weekends";
       }
     }
