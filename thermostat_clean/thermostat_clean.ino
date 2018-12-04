@@ -101,9 +101,9 @@ String setPointsInfo[4];
 struct setPoint {
   int hour;
   int minute;
-  String half;
+  bool half;
   int temp;
-  String status;
+  bool status;
 };
 
 struct myDateTime {
@@ -398,9 +398,11 @@ struct setPoint editSetPoint(struct setPoint setpoint){
     printText(editSetPoint_origins[0], String(setpoint.hour), 4);
     printText(editSetPoint_origins[1], ":", 4);
     printText(editSetPoint_origins[2], String(setpoint.minute), 4);
-    printText(editSetPoint_origins[3], String(setpoint.half), 4);
+    if(setpoint.half==true){printText(editSetPoint_origins[3], "AM", 4);};
+    if(setpoint.half==false){printText(editSetPoint_origins[3], "PM", 4);};
     printTemp(editSetPoint_origins[4], setpoint.temp, 6);
-    printText(editSetPoint_origins[5], setpoint.status, 6);
+    if(setpoint.status==true){printText(editSetPoint_origins[5], "ON", 4);};
+    if(setpoint.status==false){printText(editSetPoint_origins[5], "OFF", 4);};
     printText(editSetPoint_origins[6], "SAVE", 3);
 
     while(!ctp.touched()) {} //wait for touch
@@ -412,14 +414,18 @@ struct setPoint editSetPoint(struct setPoint setpoint){
      else if(isInTouchZone(editSetPoint_origins[2], textSize(String(setpoint.minute), 4).arr, newTouch.x, newTouch.y, 4)){
         setpoint.minute = numpad("Minute", setpoint.minute);
      }
-     else if(isInTouchZone(editSetPoint_origins[3], textSize(String(setpoint.half), 4).arr, newTouch.x, newTouch.y, 4)){
-        setpoint.half = setUpButtons(halfArray, 2, "Select AM/PM", false, "");
+     else if(isInTouchZone(editSetPoint_origins[3], textSize("AM", 4).arr, newTouch.x, newTouch.y, 4)){
+        String result = setUpButtons(halfArray, 2, "Select AM/PM", false, "");
+        if(result == "AM"){setpoint.half = true;}
+        if(result == "PM"){setpoint.half = false;}
      }
      else if(isInTouchZone(editSetPoint_origins[4], textSize(String(setpoint.temp), 6).arr, newTouch.x, newTouch.y, 4)){
         setpoint.temp = numpad("Temp", setpoint.temp);
      }
-     else if(isInTouchZone(editSetPoint_origins[5], textSize(String(setpoint.status), 6).arr, newTouch.x, newTouch.y, 4)){
-        setpoint.status = setUpButtons(statusArray, 2, "Select Status", false, "");
+     else if(isInTouchZone(editSetPoint_origins[5], textSize("ON", 6).arr, newTouch.x, newTouch.y, 4)){
+        String result = setUpButtons(statusArray, 2, "Select Status", false, "");
+        if(result == "ON"){setpoint.status = true;}
+        if(result == "OFF"){setpoint.status = false;}
      }
      else if(isInTouchZone(editSetPoint_origins[6], textSize(String("SAVE"), 3).arr, newTouch.x, newTouch.y, 4)){
 
@@ -618,5 +624,11 @@ struct arrWrap textSize(String text, int size){
 
 String setPointToString(struct setPoint setpoint){
 
-  return String(setpoint.hour) + ":" + String(setpoint.minute) + " " + setpoint.half + " " + String(setpoint.temp) + ((char)247) + " " + setpoint.status;
+  String half;
+  String status;
+  if(setpoint.half==true){half = "AM";}
+  if(setpoint.half==false){half = "PM";}
+  if(setpoint.status==true){status = "ON";}
+  if(setpoint.status==false){status = "OFF";}
+  return String(setpoint.hour) + ":" + String(setpoint.minute) + " " + half + " " + String(setpoint.temp) + ((char)247) + " " + status;
 }
