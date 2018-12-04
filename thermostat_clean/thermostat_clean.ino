@@ -17,7 +17,7 @@ Arduino Thermostat
 
 // Color definitions
 #define BLACK    0x0000
-#define BLUE     0x001F
+#define CYAN     0x07FF
 #define RED      0xF800
 #define WHITE    0xFFFF
 #define ONE_WIRE_BUS 5
@@ -312,7 +312,18 @@ void loop() {
 
     if(isInTouchZone(home_origins[4], textSize(String(currentMode), 3).arr, p.x, p.y, 4)){
       currentMode = setUpButtons(modes, 4, "Select Mode", false, "");
-
+      if(currentMode == "A/C")
+      {
+        backgroundColor = CYAN;
+      }
+      else if(currentMode == "HEAT")
+      {
+        backgroundColor = RED;
+      }
+      else
+      {
+        backgroundColor = WHITE;
+      }
       homePage();
     }
 
