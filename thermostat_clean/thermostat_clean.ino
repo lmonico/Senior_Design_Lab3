@@ -19,7 +19,8 @@ Arduino Thermostat
 #define BLACK    0x0000
 #define CYAN     0x07FF
 #define YELLOW   0xFFE0 
-#define RED      0xF800
+#define RED      0xFD34
+#define GREEN    0x9F51
 #define WHITE    0xFFFF
 #define ONE_WIRE_BUS 5
 
@@ -58,8 +59,8 @@ int editDateTime_origins[][2] = {
   {99, 70},   //2: minute
   {174, 70},  //3: half
   {-1, 125},  //4: day
-  {32, 208},  //5: month
-  {144, 208},  //6: date
+  {-1, 125},  //5: month
+  {-1, 208}, //6: date
   {-1, 288}   //7: save
 };
 
@@ -81,7 +82,7 @@ int oldTemp = 0;
 
 bool hold = false;
 
-String currentMode = "AUTO";
+String currentMode = "OFF";
 struct arrWrap {int arr[2];};
 
 String halfArray[] = {"AM", "PM"};
@@ -314,6 +315,10 @@ void loop() {
       {
         backgroundColor = RED;
       }
+      else if(currentMode == "AUTO")
+      {
+        backgroundColor = GREEN;
+      }
       else
       {
         backgroundColor = WHITE;
@@ -404,15 +409,20 @@ void homePage(){
 
   header();
   //display current temp
-  printTemp( home_origins[0], currentTemp, 11);
+  printTemp(home_origins[0], currentTemp, 11);
+  
 
   //display set to block
   printText( home_origins[1], "Set To", 2);
   printTemp(home_origins[2], setTemp, 3);
+  tft.drawRect(home_origins[2][0] - 4, home_origins[2][1] - 4, textSize(String(setTemp), 3).arr[0] + 8 + 12, textSize(String(setTemp), 3).arr[1] + 2, BLACK);
 
   //display mode block
   printText(home_origins[3], "Mode", 2);
+  home_origins[4][0] = -1;
+  home_origins[4][1] = 236;
   printText(home_origins[4], currentMode, 3);
+  tft.drawRect(home_origins[4][0] - 4, home_origins[4][1] - 4, textSize(currentMode, 3).arr[0] + 8, textSize(currentMode, 3).arr[1] + 2, BLACK);
 
 
   //display hold button
@@ -428,28 +438,43 @@ void homePage(){
 
   //display settings button
   tft.drawBitmap(footer_origins[2][0], footer_origins[2][1], settingsButton, 30, 30, BLACK);
+  tft.drawRect(footer_origins[2][0] - 4, footer_origins[2][1] - 4, bitmapLogoSize[0] + 8, bitmapLogoSize[1] + 8, BLACK);
 }
 
 struct setPoint editSetPoint(struct setPoint setpoint){
 
   bool save = false;
+  String minuteString = "";
 
   while(!save){
+
+    if(setpoint.minute < 10){
+      minuteString = "0" + String(setpoint.minute);
+    }
+    else{
+      minuteString = String(setpoint.minute);
+    }
 
     header();
 
     int editSetPointText[] = {-1, 32};
     printText(editSetPointText, "Edit Set Point", 2);
-
+    
     printText(editSetPoint_origins[0], String(setpoint.hour), 4);
+    tft.drawRect(editSetPoint_origins[0][0] - 4, editSetPoint_origins[0][1] - 4, textSize(String(setpoint.hour), 4).arr[0] + 8, textSize(String(setpoint.hour), 4).arr[1] + 2, BLACK);
     printText(editSetPoint_origins[1], ":", 4);
-    printText(editSetPoint_origins[2], String(setpoint.minute), 4);
+    printText(editSetPoint_origins[2], minuteString, 4);
+    tft.drawRect(editSetPoint_origins[2][0] - 4, editSetPoint_origins[2][1] - 4, textSize(minuteString, 4).arr[0] + 8, textSize(minuteString, 4).arr[1] + 2, BLACK);
     if(setpoint.half==true){printText(editSetPoint_origins[3], "AM", 4);};
     if(setpoint.half==false){printText(editSetPoint_origins[3], "PM", 4);};
+    tft.drawRect(editSetPoint_origins[3][0] - 4, editSetPoint_origins[3][1] - 4, textSize("AM", 4).arr[0] + 8, textSize("AM", 4).arr[1] + 2, BLACK);
     printTemp(editSetPoint_origins[4], setpoint.temp, 6);
+    tft.drawRect(editSetPoint_origins[4][0] - 4, editSetPoint_origins[4][1] - 4, textSize(String(setpoint.temp), 6).arr[0] + 8 + 30, textSize(String(setpoint.temp), 6).arr[1] + 2, BLACK);
     if(setpoint.status==true){printText(editSetPoint_origins[5], "ON", 4);};
     if(setpoint.status==false){printText(editSetPoint_origins[5], "OFF", 4);};
+    tft.drawRect(editSetPoint_origins[5][0] - 4, editSetPoint_origins[5][1] - 4, textSize("OFF", 4).arr[0] + 8, textSize("OFF", 4).arr[1] + 2, BLACK);
     printText(editSetPoint_origins[6], "SAVE", 3);
+    tft.drawRect(editSetPoint_origins[6][0] - 4, editSetPoint_origins[6][1] - 4, textSize("SAVE", 3).arr[0] + 8, textSize("SAVE", 3).arr[1] + 2, BLACK);
 
     while(!ctp.touched()) {} //wait for touch
     TS_Point newTouch = ctp.getPoint();  // Retrieve a point
@@ -457,7 +482,7 @@ struct setPoint editSetPoint(struct setPoint setpoint){
      if(isInTouchZone(editSetPoint_origins[0], textSize(String(setpoint.hour), 4).arr, newTouch.x, newTouch.y, 4)){
         setpoint.hour = numpad("Hour", setpoint.hour);
      }
-     else if(isInTouchZone(editSetPoint_origins[2], textSize(String(setpoint.minute), 4).arr, newTouch.x, newTouch.y, 4)){
+     else if(isInTouchZone(editSetPoint_origins[2], textSize(minuteString, 4).arr, newTouch.x, newTouch.y, 4)){
         setpoint.minute = numpad("Minute", setpoint.minute);
      }
      else if(isInTouchZone(editSetPoint_origins[3], textSize("AM", 4).arr, newTouch.x, newTouch.y, 4)){
@@ -514,12 +539,18 @@ String editDateTime(){
     
     
     printText(editDateTime_origins[0], String(hour), 4);
+    tft.drawRect(editDateTime_origins[0][0] - 4, editDateTime_origins[0][1] - 4, textSize(String(hour), 4).arr[0] + 8, textSize(String(hour), 4).arr[1] + 2, BLACK);
     printText(editDateTime_origins[1], ":", 4);
     printText(editDateTime_origins[2], minuteString, 4);
+    tft.drawRect(editDateTime_origins[2][0] - 4, editDateTime_origins[2][1] - 4, textSize(minuteString, 4).arr[0] + 8, textSize(minuteString, 4).arr[1] + 2, BLACK);
     printText(editDateTime_origins[3], half, 4);
-    printText(editDateTime_origins[5], String(month), 4);
-    printText(editDateTime_origins[6], String(day), 4);
+    tft.drawRect(editDateTime_origins[3][0] - 4, editDateTime_origins[3][1] - 4, textSize(half, 4).arr[0] + 8, textSize(half, 4).arr[1] + 2, BLACK);
+    printText(editDateTime_origins[5], "M: " + String(month), 4);
+    tft.drawRect(editDateTime_origins[5][0] - 4, editDateTime_origins[5][1] - 4, textSize("M: " + String(month), 4).arr[0] + 8, textSize(String(month), 4).arr[1] + 2, BLACK);
+    printText(editDateTime_origins[6], "D: " + String(day), 4);
+    tft.drawRect(editDateTime_origins[6][0] - 4, editDateTime_origins[6][1] - 4, textSize("D: " + String(day), 4).arr[0] + 8, textSize(String(day), 4).arr[1] + 2, BLACK);
     printText(editDateTime_origins[7], "SAVE", 3);
+    tft.drawRect(editDateTime_origins[7][0] - 4, editDateTime_origins[7][1] - 4, textSize("SAVE",3).arr[0] + 8, textSize("SAVE", 3).arr[1] + 2, BLACK);
 
     while(!ctp.touched()) {} //wait for touch
     TS_Point p = ctp.getPoint();  // Retrieve a point
@@ -533,10 +564,10 @@ String editDateTime(){
     else if(isInTouchZone(editDateTime_origins[3], textSize(half, 4).arr, p.x, p.y, 4)){
         half = setUpButtons(halfArray, 2, "Select AM/PM", false, "");
     }
-    else if(isInTouchZone(editDateTime_origins[5], textSize(String(month), 4).arr, p.x, p.y, 4)){
+    else if(isInTouchZone(editDateTime_origins[5], textSize("M: " + String(month), 4).arr, p.x, p.y, 4)){
         month = numpad("Month", month);
     }
-    else if(isInTouchZone(editDateTime_origins[6], textSize(String(day), 4).arr, p.x, p.y, 4)){
+    else if(isInTouchZone(editDateTime_origins[6], textSize("D: " + String(day), 4).arr, p.x, p.y, 4)){
         day = numpad("Day", day);
     }
     else if(isInTouchZone(editDateTime_origins[7], textSize("SAVE", 4).arr, p.x, p.y, 4)){
@@ -684,7 +715,7 @@ bool isInTouchZone(int origin[], int box_dim[], int x_point, int y_point, int ma
   int x_max = origin[0] + box_dim[0] + margin;
   int y_max = origin[1] + box_dim[1] + margin;
 
-  tft.drawRect(x_min, y_min, (x_max-x_min), (y_max-y_min), RED); //draw the touch zone for debugging purposes
+  //tft.drawRect(x_min, y_min, (x_max-x_min), (y_max-y_min), RED); //draw the touch zone for debugging purposes
 
   if((x_min < x_point) && (x_point < x_max)){if((y_min < y_point) && (y_point < y_max)){return true;}}
 
@@ -718,14 +749,22 @@ struct arrWrap textSize(String text, int size){
 }
 
 String setPointToString(struct setPoint setpoint){
-
+  
   String half;
   String status;
+  String minuteString = "";
   if(setpoint.half==true){half = "AM";}
   if(setpoint.half==false){half = "PM";}
   if(setpoint.status==true){status = "ON";}
   if(setpoint.status==false){status = "OFF";}
-  return String(setpoint.hour) + ":" + String(setpoint.minute) + " " + half + " " + String(setpoint.temp) + ((char)247) + " " + status;
+
+  if(setpoint.minute < 10){
+      minuteString = "0" + String(setpoint.minute);
+    }
+    else{
+      minuteString = String(setpoint.minute);
+    }
+  return String(setpoint.hour) + ":" + minuteString + " " + half + " " + String(setpoint.temp) + ((char)247) + " " + status;
 }
 
 String dateTimeToString(DateTime dateTime){
