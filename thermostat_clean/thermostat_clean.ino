@@ -78,6 +78,8 @@ int setTemp = 75;
 int currentTemp = 0;
 int oldTemp = 0;
 
+bool hold = false;
+
 String currentMode = "A/C";
 struct arrWrap {int arr[2];};
 
@@ -198,6 +200,46 @@ void loop() {
   if(oldDateTime != currentDateTime){
 
       printText(dateTime_origin, currentDateTime, 2);
+  }
+
+  
+  if(!hold)
+  {
+      int hour = rtc.now().hour(); 
+      bool isAm = true;
+      if(hour > 12)
+      {
+        isAm = false;
+        hour -= 12; 
+      }
+      if(rtc.now().dayOfTheWeek() != 0 || rtc.now().dayOfTheWeek() != 6)
+      {
+        for(int i = 0; i < 4; i++)
+        {
+          setPoint currentPoint = setPointsArr[i];
+          if(currentPoint.status != false)
+          { 
+            if(hour == currentPoint.hour && rtc.now().minute() == currentPoint.minute && isAm == currentPoint.status)
+            {
+              setTemp = currentPoint.temp;
+            }
+          }
+        }
+      }
+      else
+      {
+        for(int i = 4; i < 8; i++)
+        {
+          setPoint currentPoint = setPointsArr[i];
+          if(currentPoint.status != false)
+          {
+            if(hour == currentPoint.hour && rtc.now().minute() == currentPoint.minute && isAm == currentPoint.status)
+            {
+              setTemp = currentPoint.temp;
+            }            
+          }
+        }
+      }  
   }
   
   oldTemp = currentTemp;
