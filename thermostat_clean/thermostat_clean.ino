@@ -106,7 +106,7 @@ struct setPoint {
   String status;
 };
 
-struct DateTime {
+struct myDateTime {
   int hour;
   int minute;
   String half;
@@ -117,7 +117,7 @@ struct DateTime {
 
 setPoint setPointsArr[8];
 
-DateTime dateTime = {11, 30, "AM", "Wed", "Oct", 30};
+myDateTime dateTime = {11, 30, "AM", "Wed", "Oct", 30};
 
 int heatingLEDPin = 2;
 int coolingLEDPin = 3;
@@ -208,28 +208,33 @@ void loop() {
   if(oldTemp != currentTemp && screenState == "Home") {
       printTemp(home_origins[0], currentTemp, 11);
   }
+  
   if(setTemp != currentTemp && screenState == "Home")
   {
-    if(currentMode == "A/C")
-    {
-      //backgroundColor = CYAN;
-      digitalWrite(coolingLEDPin, HIGH);
-      digitalWrite(heatingLEDPin, LOW);
-      //homePage();
+    if(setTemp < currentTemp){
+      if(currentMode == "A/C" || currentMode == "AUTO"){
+        //backgroundColor = CYAN;
+        digitalWrite(coolingLEDPin, HIGH);
+        digitalWrite(heatingLEDPin, LOW);
+        //homePage();
+      }
+      else{
+        digitalWrite(coolingLEDPin, LOW);
+        digitalWrite(heatingLEDPin, LOW);
+      }
     }
-    else if(currentMode ==  "HEAT")
-    {
-      //backgroundColor = RED;
-      digitalWrite(coolingLEDPin, LOW);
-      digitalWrite(heatingLEDPin, HIGH);
-      //homePage();
-    }
-    else if(currentMode ==  "AUTO")
-    {
-      //backgroundColor = WHITE;
-      digitalWrite(coolingLEDPin, HIGH);
-      digitalWrite(heatingLEDPin, HIGH);
-      //homePage();
+    else if(setTemp > currentTemp)
+    { 
+      if(currentMode == "HEAT" || currentMode == "AUTO"){
+        //backgroundColor = RED;
+        digitalWrite(coolingLEDPin, LOW);
+        digitalWrite(heatingLEDPin, HIGH);
+        //homePage();
+      }
+      else{
+        digitalWrite(coolingLEDPin, LOW);
+        digitalWrite(heatingLEDPin, LOW);
+      }
     }
     else if(currentMode == "OFF")
     {
